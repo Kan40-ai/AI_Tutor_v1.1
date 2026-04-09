@@ -1,0 +1,26 @@
+# Core AI/ML Libraries
+sentence-transformers>=2.2.2
+torch>=2.0.0
+transformers>=4.30.0
+huggingface_hub>=0.16.0
+
+# NLP Processing
+spacy>=3.7.0
+nltk>=3.8.1
+pypdf2>=3.0.0
+
+# Vector Database
+# pinecone >=3.0.0
+
+# LangChain Document Loaders
+langchain-community>=0.0.20
+annotated-types>=0.6.0
+
+# Standard Python Libraries (ensure compatibility)
+numpy>=1.24.0
+dataclasses
+pathlib
+typing-extensions
+
+# Language Model (spaCy English model - install separately)
+# python -m spacy download en_core_web_sm
