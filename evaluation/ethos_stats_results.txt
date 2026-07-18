@@ -1,0 +1,136 @@
+=================================================================
+EduTrust-Eval Statistical Analysis (v2 — Final)
+=================================================================
+
+Loading: EduTrust_Eval_v6.xlsx -> Sheet: EduTrust-Eval Master v6
+
+Total prompts loaded       : 25
+Statistical analysis       : 17 prompts (IDs [1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 14, 15, 16, 17, 18, 21, 25])
+Hard-block safety          : 5 prompts (IDs [9, 11, 12, 19, 20])
+Limitations excluded       : 3 prompts (IDs [22, 23, 24])
+
+=================================================================
+TEST 3 — Per-Dimension Mean Score Table (Descriptive)
+        Based on statistical analysis prompts only
+=================================================================
+
+Dimension                              LLM              RAG         Ethos AI
+---------------------------------------------------------------------------
+Factual Accuracy               0.000 (n=3)      0.800 (n=3)      1.000 (n=3)
+Transparency                   0.610 (n=5)      0.865 (n=2)      0.877 (n=5)
+Pedagogical Alignment          0.817 (n=3)      0.765 (n=2)      0.979 (n=3)
+Bias & Fairness                0.300 (n=3)      0.900 (n=1)      0.954 (n=3)
+Safety & Ethics                        N/A              N/A              N/A
+Age-Appropriateness            0.307 (n=3)      0.650 (n=1)      0.985 (n=3)
+---------------------------------------------------------------------------
+OVERALL MEAN                         0.431            0.801            0.949
+
+Sample sizes:
+  3-condition Friedman (COURSE_NLP): n=9
+  Ethos AI vs LLM (all routes):      n=17
+  RAG vs LLM (COURSE_NLP):           n=9
+
+=================================================================
+TEST 1 — Friedman Test (Primary — Overall Significance)
+        Hard-block + limitation prompts EXCLUDED
+=================================================================
+
+3-Condition (LLM vs RAG vs Ethos AI) — COURSE_NLP (n=9):
+  Chi-squared (chi2) = 14.8000
+  p-value            = 0.000611  ***  (p<0.001)
+  SIGNIFICANT — proceed to Wilcoxon pairwise tests
+
+=================================================================
+TEST 2 — Wilcoxon Signed-Rank Pairwise (Post-hoc)
+        Bonferroni correction: p x 3
+=================================================================
+
+Ethos AI vs LLM (n=17):
+  W statistic    = 0.00
+  p (raw)        = 0.000281
+  p (Bonferroni) = 0.000843  ***  (p<0.001)
+
+Ethos AI vs RAG (n=9):
+  W statistic    = 0.00
+  p (raw)        = 0.003906
+  p (Bonferroni) = 0.011719  *    (p<0.05)
+
+RAG vs LLM (n=9):
+  W statistic    = 5.00
+  p (raw)        = 0.078125
+  p (Bonferroni) = 0.234375  n.s. (not significant)
+
+=================================================================
+TEST 4 — Cohen's d Effect Size
+        d>0.8=Large  d>0.5=Medium  d>0.2=Small
+=================================================================
+
+Ethos AI vs LLM (n=17): d=1.3423 -> Large effect
+Ethos AI vs RAG (n=9): d=1.6974 -> Large effect
+RAG vs LLM     (n=9): d=1.0042 -> Large effect
+
+=================================================================
+TEST 5 — Hard-Block Safety Accuracy (Qualitative Binary)
+        5 prompts: IDs 9, 11, 12, 19, 20
+=================================================================
+
+  System      Correctly blocked   Accuracy
+  ----------  ------------------  --------
+  LLM         0 / 5               0%   (no pre-gen firewall)
+  RAG         0 / 5               0%   (no pre-gen firewall)
+  Ethos AI    5 / 5               100% (Agent 5 pre-gen firewall)
+
+  Score=0 for Ethos AI = CORRECT suppression  (right kind of 0)
+  Score=0 for LLM/RAG  = architectural gap    (wrong kind of 0)
+
+=================================================================
+CHART — Generating results_chart_full.png (4 panels)
+=================================================================
+
+Chart saved: results_chart.png  (4 panels: A=means, B=Wilcoxon, C=Cohen's d, D=Hard-block)
+
+=================================================================
+PAPER-READY SUMMARY
+=================================================================
+EduTrust-Eval Statistical Analysis Results (v2 — Final)
+=================================================================
+
+EVALUATION DESIGN:
+  Total prompts          : 25
+  Statistical analysis   : 17 prompts (Tests 1-4)
+  Qualitative safety     : 5 prompts (Test 5 — hard-block)
+  Documented limitations : 3 prompts (excluded)
+
+OVERALL MEAN SCORES:
+  LLM Baseline : 0.431
+  RAG Baseline : 0.801  (COURSE_NLP only)
+  Ethos AI     : 0.949
+
+PER-DIMENSION MEANS:
+Dimension                     LLM     RAG  Ethos AI
+--------------------------------------------------
+Factual Accuracy            0.000   0.800     1.000
+Transparency                0.610   0.865     0.877
+Pedagogical Alignment       0.817   0.765     0.979
+Bias & Fairness             0.300   0.900     0.954
+Safety & Ethics               N/A     N/A       N/A
+Age-Appropriateness         0.307   0.650     0.985
+
+TEST 1 — FRIEDMAN:
+  chi2=14.800, p=0.000611  ***  (p<0.001)
+
+TEST 2 — WILCOXON (Bonferroni):
+  Ethos AI vs LLM       : W=0.00, p(raw)=0.000281, p(Bonf)=0.000843  ***  (p<0.001)
+  Ethos AI vs RAG       : W=0.00, p(raw)=0.003906, p(Bonf)=0.011719  *    (p<0.05)
+  RAG vs LLM            : W=5.00, p(raw)=0.078125, p(Bonf)=0.234375  n.s. (not significant)
+
+TEST 4 — COHEN'S D:
+  Ethos vs LLM          : d=1.3423  (Large effect)
+  Ethos vs RAG          : d=1.6974  (Large effect)
+  RAG vs LLM            : d=1.0042  (Large effect)
+
+TEST 5 — HARD-BLOCK SAFETY ACCURACY:
+  LLM=0/5 (0%)   RAG=0/5 (0%)   Ethos AI=5/5 (100%)
+
+PAPER SENTENCE (paste into Results section):
+"Ethos AI achieved a mean overall trust score of 0.949 across 17 statistically evaluated EduTrust-Eval prompts, compared to 0.801 for the RAG baseline (COURSE_NLP route) and 0.431 for the LLM baseline. A Friedman test confirmed statistically significant differences across conditions (chi2=14.800, p=0.0006). Pairwise Wilcoxon tests with Bonferroni correction confirmed Ethos AI significantly outperformed both baselines. Effect sizes were large across all comparisons (Cohen's d > 0.8). On five adversarial safety prompts evaluated as binary outcomes, Ethos AI achieved a hard-block accuracy of 5/5 compared to 0/5 for both baselines."

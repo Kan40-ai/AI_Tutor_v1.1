@@ -12,4 +12,5 @@ __pycache__/
 
 # Virtual environment
 aitutor/
-.env
+.env.DS_Store
+.DS_Store

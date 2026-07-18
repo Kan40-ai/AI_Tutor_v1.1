@@ -1,3 +1,6 @@
+import os
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 
@@ -38,7 +41,8 @@ from fastmcp import Client
 import regex as re
 
 from core.governance import GovernanceLayer
-
+from core.trust_agents.agent1_factual_accuracy import FactualAccuracyAgent
+from core.trust_agents.agent4_bias_fairness import BiasFairnessAgent
 
 @dataclass
 class TutorResponse:
@@ -59,7 +63,7 @@ class TutorService:
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google_credentials.json"
         
         # 🧠 Initialize the Brain using your Project ID
-        vertexai.init(project="ornate-fragment-477923-t2", location="global")
+        vertexai.init(project="ornate-fragment-477923-t2", location="us-central1")
         self.llm = GenerativeModel("gemini-2.5-flash")
 
         
@@ -77,7 +81,9 @@ class TutorService:
 
         self.database_dir = r"C:\Users\ks1679\Desktop\Research - Pain Points (Edu Domain)\AI Tutor Prototype\Database"
         # 2. Add this for your Project Root (Where app.py and the weights are)
-        self.root_dir = r"C:\Users\ks1679\Desktop\AI Tutor - v1.1"
+        # self.root_dir = r"C:\Users\ks1679\Desktop\AI Tutor - v1.1"
+
+        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         # 1. Initialize Global Configurations and Classes
         config = ProsePreprocessConfig(
@@ -184,6 +190,8 @@ class TutorService:
         # raw_slide_texts = [chunk[1]["text"] for chunk in self.prose_chunks]
         self.bm25 = BM25Manager()
         self.bm25.filepath = os.path.join(self.root_dir, "bm25_weights.json")
+
+        print(f"DEBUG: Looking for BM25 at: {self.bm25.filepath}")
         self.bm25.load_model()
         # self.bm25.fit_and_save(raw_slide_texts)
 
@@ -251,11 +259,17 @@ class TutorService:
 
         # 🟢 Initialize Governance Layer 
         self.governance = GovernanceLayer(self.tutor_engine.llm)
+        self.agent1     = FactualAccuracyAgent(llm_client=self.tutor_engine.llm)
+        self.agent4 = BiasFairnessAgent(llm_client=self.tutor_engine.llm)
 
         # 🟢 Initialize the intent router
         self.router = StageZeroRouter(self.tutor_engine.llm)
 
-        self.youtube_mcp_path = r"C:\Users\ks1679\Desktop\AI Tutor - v1.1\core\youtube_MCP.py"
+
+        # self.youtube_mcp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "core", "youtube_MCP.py")
+
+        self.youtube_mcp_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "core", "youtube_MCP.py")
 
     # ASYNC method for the youtube MCP initialization
     async def get_video_info(self, url):
@@ -459,7 +473,9 @@ class TutorService:
                 return {
                     "answer": answer_text,
                     "sources": [f"🧠 Agentic Router (Base LLM) - Trigger: {reason}"],
-                    "confidence_score": "N/A (Agentic Pivot)"
+                    "confidence_score": "N/A (Agentic Pivot)",
+                    "resolved_profile": resolved_profile,
+                    "intent_route":     "GENERAL_ASSISTANCE",  
                 }
 
 
@@ -656,11 +672,34 @@ class TutorService:
             You are a professional AI Tutor. Answer the student's question based STRICTLY on the provided course context.
             
             GUIDELINES:
-            1. INLINE CITATIONS: When stating a fact, you MUST cite it using the exact file and page number provided in the context header. Use this exact format template: [File: <insert_exact_filename>, Page: <insert_exact_page>]. Do NOT just write [Source 1].
-            2. THE ESCAPE HATCH: If the context does NOT contain the exact answer, you MUST output ONLY this exact string: INSUFFICIENT_CONTEXT
-            3. PARTIAL MATCHES: If the context mentions the topic, but is missing the SPECIFIC detail asked, DO NOT explain what is missing. You MUST output ONLY: INSUFFICIENT_CONTEXT
-            4. TOPIC MISMATCH: If the student asks about a specific person/concept (e.g., Shannon), and the context is about someone else (e.g., Markov), DO NOT summarize the context. You MUST output ONLY: INSUFFICIENT_CONTEXT
-                        
+            1. INLINE CITATIONS: Every factual claim MUST be cited using the exact 
+            file and page from the context header. Format: 
+            [File: <exact_filename>, Page: <exact_page>]. 
+            Never write [Source 1] or leave claims uncited.
+
+            CORRECT FORMAT:   [File: NLP-Week1-sp-2026.pdf, Page: 41]
+            WRONG FORMAT:     [NLP-Week1-sp-2026.pdf, Page: 41]  ← missing 'File:'
+            WRONG FORMAT:     [Source 1]  ← never use this
+            WRONG FORMAT:     [Page 41]   ← never use this
+            
+            The word 'File:' MUST always appear first inside the brackets.
+            Never omit it under any circumstances.
+
+            2. SYNTHESIS OVER REFUSAL: You MUST attempt an answer if ANY chunk 
+            contains relevant information — even partial. Synthesise across 
+            multiple chunks when needed. A grounded partial answer with citations 
+            is always preferred over a refusal.
+
+            3. ESCAPE HATCH: Output ONLY the exact string INSUFFICIENT_CONTEXT 
+            in these two cases ONLY:
+            (a) Zero chunks contain any information related to the question topic.
+            (b) The student asks about a specific named entity (person, formula, 
+                dataset) and that entity does not appear anywhere in the context.
+            In ALL other cases you MUST attempt a cited answer.
+
+            4. STRICT GROUNDING: Never use outside knowledge. If a detail is not 
+            in the context, omit it. Do not speculate or fill gaps from training 
+            data. Only state what the context explicitly supports.
             COURSE CONTEXT:
             {context_str}
             
@@ -675,8 +714,28 @@ class TutorService:
                 print("\n" + "="*60)
                 print("🛡️ [STEP 3 ROUTING] ESCAPE HATCH PULLED")
                 print("Diagnosis: Safe Refusal. The context lacked specific details.")
-                print("Action: Bypassing the NLI Judge to save latency. Routing to General Fallback...")
+                print("Action: Returning transparent refusal - NOT falling back to LLM.")
                 print("="*60 + "\n")
+                # -- COURSE routes: transparent refusal is more trustworthy
+                # than silently degrading to General LLM and presenting
+                # training data as if it were verified course content.
+                # Preserves Agent 1 integrity - no hallucination, no false citation.
+                # Agent 2 will score citation_coverage=0 but that is honest.
+                if intent in ("COURSE_NLP", "COURSE_ML"):
+                    return {
+                        "answer": (
+                            "I couldn't find specific information about this in the "
+                            "uploaded course slides. Please refer to your course "
+                            "materials directly or ask your instructor for guidance "
+                            "on this topic."
+                        ),
+                        "sources":          [],
+                        "confidence_score": "Low (Insufficient Course Context)",
+                        "refined_chunks":   refined_chunks,
+                        "resolved_profile": resolved_profile,
+                        "intent_route":     intent,
+                    }
+                # Non-course routes: keep existing fallback behaviour
                 return trigger_fallback("LLM determined context was insufficient (Escape Hatch pulled)")
 
             # ==========================================
@@ -725,7 +784,10 @@ class TutorService:
             return {
                 "answer": draft_answer,
                 "sources": [c['metadata'].get('source') for c in refined_chunks],
-                "confidence_score": "High (Verified by Agent)"
+                "confidence_score": "High (Verified by Agent)",
+                "refined_chunks":  refined_chunks,
+                "resolved_profile":  resolved_profile, 
+                "intent_route":     intent,  
             }
           
             
@@ -739,6 +801,3 @@ class TutorService:
     # 9. Main method to ask the tutor a question (RAG end-to-end)
     # async def ask_tutor(self, question: str):       
     #     return self.rag_tutor.answer(question)
-
-            
-    

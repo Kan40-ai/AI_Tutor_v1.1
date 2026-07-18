@@ -18,6 +18,9 @@ annotated-types>=0.6.0
 
 # Standard Python Libraries (ensure compatibility)
 numpy>=1.24.0
+pandas>=2.2.0
+scipy>=1.11.0
+openpyxl>=3.1.0
 dataclasses
 pathlib
 typing-extensions
