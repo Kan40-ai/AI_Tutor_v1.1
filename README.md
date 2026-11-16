@@ -6,6 +6,7 @@ EthosAI targets the "Trustworthiness Gap" in educational AI: standard LLM and RA
 
 ---
 
+
 ## Table of contents
 
 - [Architecture](#architecture)
